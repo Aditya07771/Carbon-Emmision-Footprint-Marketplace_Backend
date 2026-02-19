@@ -23,6 +23,9 @@ const ipfsRoutes = require('./routes/ipfs.routes'); // NEW
 
 const app = express();
 
+
+app.set("trust proxy", 1);
+
 /* =========================
    Middleware
 ========================= */
