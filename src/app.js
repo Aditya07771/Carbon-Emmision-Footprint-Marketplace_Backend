@@ -23,7 +23,6 @@ const ipfsRoutes = require('./routes/ipfs.routes'); // NEW
 
 const app = express();
 
-
 app.set("trust proxy", 1);
 
 /* =========================
@@ -34,24 +33,20 @@ app.use(helmet({
   crossOriginOpenerPolicy: false,
 }));
 
-
 app.use(compression());
 
-// app.use(cors({
-//   origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://carbon-emmision-footprint-marketpla.vercel.app'], // Add your frontend local dev URLs here
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address', 'Accept'],
-//   credentials: true
-// }));
-
+/* =========================
+   CORS Configuration
+========================= */
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
-  'https://carbon-emmision-footprint-marketpla.vercel.app'
+  'https://carbon-emmision-footprint-marketplace.vercel.app', // Corrected spelling here
+  'https://carbon-emmision-footprint-marketpla.vercel.app'    // Kept original just in case
 ];
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     // allow requests with no origin (mobile apps, curl, postman)
     if (!origin) return callback(null, true);
@@ -59,17 +54,20 @@ app.use(cors({
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
+      console.warn(`CORS blocked request from origin: ${origin}`);
       return callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address', 'Accept']
+};
 
-// ⭐ IMPORTANT: handle preflight
-app.options('*', cors());
+// Apply CORS options to all routes
+app.use(cors(corsOptions));
 
+// ⭐ IMPORTANT: handle preflight using the SAME corsOptions
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -129,6 +127,7 @@ app.use('/api/retirements', retirementRoutes);
 app.use('/api/explorer', explorerRoutes);
 app.use('/api/users', userRoutes); // NEW
 app.use('/api/ipfs', ipfsRoutes);  // NEW
+
 /* =========================
    Root Redirect (optional)
 ========================= */
