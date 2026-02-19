@@ -34,12 +34,38 @@ app.use(helmet({
 
 app.use(compression());
 
+// app.use(cors({
+//   origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://carbon-emmision-footprint-marketpla.vercel.app'], // Add your frontend local dev URLs here
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address', 'Accept'],
+//   credentials: true
+// }));
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://carbon-emmision-footprint-marketpla.vercel.app'
+];
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'https://carbon-emmision-footprint-marketpla.vercel.app'], // Add your frontend local dev URLs here
+  origin: function (origin, callback) {
+    // allow requests with no origin (mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address', 'Accept'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address']
 }));
+
+// ⭐ IMPORTANT: handle preflight
+app.options('*', cors());
 
 
 app.use(express.json());
