@@ -11,11 +11,13 @@ const validateIssuance = (req, res, next) => {
       'Reforestation', 'Solar', 'Wind', 'Biogas',
       'Methane Capture', 'Ocean Conservation', 'Other'
     ).required(),
-    verifier: Joi.string().required(),
-    co2Tonnes: Joi.number().integer().min(1).required(),
+    verifier: Joi.string().allow('').optional(),
+    co2Tonnes: Joi.number().min(1).required(),
     vintageYear: Joi.number().integer().min(2000).max(2100).required(),
     asaId: Joi.number().integer().required(),
-    issuerWallet: Joi.string().length(58).required()
+    issuerWallet: Joi.string().required(),
+    ipfsHash: Joi.string().required(),
+    description: Joi.string().allow('').optional(),
   });
 
   const { error } = schema.validate(req.body);

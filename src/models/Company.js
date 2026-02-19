@@ -1,7 +1,7 @@
-// src/models/Company.js
+// src/models/Company.js (ADD MISSING FIELD)
 
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // 👈 IMPORT INSTANCE
+const sequelize = require('../config/database');
 
 const Company = sequelize.define('Company', {
   id: {
@@ -15,12 +15,13 @@ const Company = sequelize.define('Company', {
   },
   wallet_address: {
     type: DataTypes.STRING,
-    allowNull: false
-  },
-  total_retired: {
-    type: DataTypes.INTEGER,
     allowNull: false,
-    defaultValue: 0
+    unique: true
+  },
+  total_retired: {  // ADD THIS FIELD
+    type: DataTypes.DECIMAL(20, 2),
+    defaultValue: 0,
+    allowNull: false
   }
 }, {
   tableName: 'companies',

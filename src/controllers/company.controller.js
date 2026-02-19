@@ -1,8 +1,8 @@
-// src/controllers/company.controller.js
+// src/controllers/company.controller.js (FIX IMPORTS)
 
 const Company = require('../models/Company');
 const Retirement = require('../models/Retirement');
-const Project = require('../models/Project');
+const Project = require('../models/Project'); // ADD THIS LINE
 const indexerService = require('../services/indexer.service');
 const logger = require('../utils/logger');
 
@@ -61,7 +61,7 @@ class CompanyController {
 
   /**
    * Public explorer
-   * GET /api/explorer/:walletAddress
+   * GET /api/explorer/public/:walletAddress
    */
   async publicExplorer(req, res, next) {
     try {
@@ -71,31 +71,39 @@ class CompanyController {
         where: { wallet_address: walletAddress }
       });
 
-      const retirements = await Retirement.findAll({
-        where: { company_id: company?.id },
-        include: [{
-          model: Project,
-          as: 'project'
-        }]
-      });
+      const retirements = company 
+        ? await Retirement.findAll({
+            where: { company_id: company.id },
+            include: [{
+              model: Project,
+              as: 'project'
+            }],
+            order: [['retired_at', 'DESC']]
+          })
+        : [];
+
+      const totalTonnesRetired = retirements.reduce((sum, r) => sum + parseFloat(r.tonnes || 0), 0);
 
       res.json({
         success: true,
         data: {
           company: company?.name || 'Unknown',
           walletAddress,
-          totalTonnesRetired: retirements.reduce((s, r) => s + r.tonnes, 0),
+          totalTonnesRetired,
           retirements: retirements.map(r => ({
             tonnes: r.tonnes,
             retiredAt: r.retired_at,
-            project: r.project.name,
-            verifier: r.project.verifier,
+            project: r.project?.name || 'Unknown Project',
+            verifier: r.project?.verifier || 'Unknown',
             blockchainProof: `https://testnet.algoexplorer.io/tx/${r.txn_hash}`,
-            certificate: `https://gateway.pinata.cloud/ipfs/${r.ipfs_certificate}`
+            certificate: r.ipfs_certificate 
+              ? `https://gateway.pinata.cloud/ipfs/${r.ipfs_certificate}` 
+              : null
           }))
         }
       });
     } catch (error) {
+      logger.error('Public Explorer Error:', error);
       next(error);
     }
   }

@@ -2,7 +2,6 @@
 
 const Project = require('../models/Project');
 const algorandService = require('../services/algorand.service');
-const ipfsService = require('../services/ipfs.service');
 const logger = require('../utils/logger');
 
 class CreditController {
@@ -21,29 +20,13 @@ class CreditController {
         co2Tonnes,
         vintageYear,
         asaId,
-        issuerWallet
+        issuerWallet,
+        ipfsHash,   // ← already uploaded by the frontend before calling this
+        description,
       } = req.body;
 
-      // Validate ASA exists on blockchain
-      const assetInfo = await algorandService.getAssetInfo(asaId);
-      if (!assetInfo) {
-        return res.status(400).json({
-          success: false,
-          error: 'Asset not found on Algorand'
-        });
-      }
-
-      // Upload metadata to IPFS
-      const ipfsHash = await ipfsService.uploadProjectDocument({
-        projectId,
-        name,
-        location,
-        projectType,
-        verifier,
-        co2Tonnes,
-        vintageYear,
-        issuerWallet
-      });
+      // Optional: verify ASA exists on blockchain (can be slow – skip if not needed)
+      // const assetInfo = await algorandService.getAssetInfo(asaId);
 
       // Save to database
       const project = await Project.create({
@@ -56,7 +39,8 @@ class CreditController {
         vintage_year: vintageYear,
         asa_id: asaId,
         ipfs_hash: ipfsHash,
-        issuer_wallet: issuerWallet
+        issuer_wallet: issuerWallet,
+        description,
       });
 
       logger.info(`✅ Credits issued: Project ${projectId}, ASA ${asaId}`);
@@ -68,13 +52,14 @@ class CreditController {
           asaId,
           ipfsHash,
           ipfsUrl: `https://gateway.pinata.cloud/ipfs/${ipfsHash}`,
-          explorerUrl: `https://testnet.algoexplorer.io/asset/${asaId}`
+          explorerUrl: `https://testnet.algoexplorer.io/asset/${asaId}`,
         }
       });
     } catch (error) {
       next(error);
     }
   }
+
 
   /**
    * Get credit details
