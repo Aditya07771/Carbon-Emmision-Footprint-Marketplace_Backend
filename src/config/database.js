@@ -1,9 +1,11 @@
 // src/config/database.js
-
 const { Sequelize } = require('sequelize');
 const logger = require('../utils/logger');
 
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+// Fallback to prevent immediate crash if env var is missing during build step
+const dbUrl = process.env.DATABASE_URL || 'postgres://user:pass@localhost:5432/dummy';
+
+const sequelize = new Sequelize(dbUrl, {
   dialect: "postgres",
   logging: false,
   dialectOptions: {
@@ -13,10 +15,5 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
     }
   }
 });
-
-// Test connection
-sequelize.authenticate()
-  .then(() => logger.info('✅ Database connected successfully'))
-  .catch(err => logger.error('❌ Database connection failed:', err));
 
 module.exports = sequelize;

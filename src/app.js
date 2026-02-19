@@ -139,7 +139,9 @@ async function start() {
     await sequelize.authenticate();
     logger.info('✅ Database connected');
 
-    await sequelize.sync({ alter: true });
+    // ONLY alter tables automatically if we are NOT in production
+    const isProduction = process.env.NODE_ENV === 'production';
+    await sequelize.sync({ alter: !isProduction });
     logger.info('✅ Database synchronized');
 
     app.listen(PORT, () => {
