@@ -10,14 +10,16 @@ const rateLimit = require('express-rate-limit');
 const sequelize = require('./config/database');
 const logger = require('./utils/logger');
 
-// ⭐ Import models THROUGH index so associations load once
-const { Project, Company, Listing, Retirement } = require('./models');
+// ⭐ Import models (loads associations once)
+require('./models');
 
 // Routes
 const creditRoutes = require('./routes/credit.routes');
 const marketplaceRoutes = require('./routes/marketplace.routes');
 const retirementRoutes = require('./routes/retirement.routes');
 const explorerRoutes = require('./routes/explorer.routes');
+const userRoutes = require('./routes/user.routes'); // NEW
+const ipfsRoutes = require('./routes/ipfs.routes'); // NEW
 
 const app = express();
 
@@ -38,7 +40,7 @@ app.use(
 );
 
 /* =========================
-   Rate Limit
+   Rate Limit (applies to API)
 ========================= */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -48,22 +50,49 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 /* =========================
+   API Root (prevents Cannot GET /api)
+========================= */
+app.get('/api', (req, res) => {
+  res.json({
+    message: '🌍 Carbon Marketplace API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      credits: '/api/credits',
+      marketplace: '/api/marketplace',
+      retirements: '/api/retirements',
+      explorer: '/api/explorer',
+      users: '/api/users', // NEW
+      ipfs: '/api/ipfs'    // NEW
+    }
+  });
+});
+
+/* =========================
+   Health Check
+========================= */
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    network: process.env.ALGORAND_NETWORK,
+    timestamp: new Date().toISOString()
+  });
+});
+
+/* =========================
    Routes
 ========================= */
 app.use('/api/credits', creditRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/retirements', retirementRoutes);
 app.use('/api/explorer', explorerRoutes);
-
+app.use('/api/users', userRoutes); // NEW
+app.use('/api/ipfs', ipfsRoutes);  // NEW
 /* =========================
-   Health Check
+   Root Redirect (optional)
 ========================= */
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    network: process.env.ALGORAND_NETWORK,
-    timestamp: new Date().toISOString()
-  });
+app.get('/', (req, res) => {
+  res.redirect('/api');
 });
 
 /* =========================
@@ -87,7 +116,6 @@ async function start() {
     await sequelize.authenticate();
     logger.info('✅ Database connected');
 
-    // ⭐ Important: sync AFTER models + associations loaded
     await sequelize.sync({ alter: true });
     logger.info('✅ Database synchronized');
 
@@ -107,3 +135,5 @@ async function start() {
 }
 
 start();
+
+module.exports = app;

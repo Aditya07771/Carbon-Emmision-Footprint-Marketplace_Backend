@@ -1,7 +1,6 @@
 // src/controllers/marketplace.controller.js
 
-const Listing = require('../models/Listing');
-const Project = require('../models/Project');
+const { Listing, Project } = require('../models');
 const algorandService = require('../services/algorand.service');
 const indexerService = require('../services/indexer.service');
 const logger = require('../utils/logger');
@@ -20,7 +19,7 @@ class MarketplaceController {
           as: 'project',
           attributes: ['name', 'location', 'verifier', 'project_type', 'vintage_year', 'ipfs_hash']
         }],
-        order: [['created_at', 'DESC']]
+        order: [['createdAt', 'DESC']]
       });
 
       res.json({
@@ -50,7 +49,7 @@ class MarketplaceController {
       // Verify seller owns the asset
       const assets = await indexerService.getWalletAssets(sellerWallet);
       const ownsAsset = assets.find(a => a['asset-id'] === parseInt(asaId));
-      
+
       if (!ownsAsset || ownsAsset.amount === 0) {
         return res.status(400).json({
           success: false,
@@ -88,7 +87,7 @@ class MarketplaceController {
 
       // Verify transaction on blockchain
       const verification = await algorandService.verifyTransaction(txnHash);
-      
+
       if (!verification.confirmed) {
         return res.status(400).json({
           success: false,

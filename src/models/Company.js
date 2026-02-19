@@ -16,6 +16,11 @@ const Company = sequelize.define('Company', {
   wallet_address: {
     type: DataTypes.STRING,
     allowNull: false
+  },
+  total_retired: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 0
   }
 }, {
   tableName: 'companies',

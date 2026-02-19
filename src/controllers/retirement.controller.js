@@ -1,8 +1,6 @@
 // src/controllers/retirement.controller.js
 
-const Retirement = require('../models/Retirement');
-const Company = require('../models/Company');
-const Project = require('../models/Project');
+const { Retirement, Company, Project } = require('../models');
 const algorandService = require('../services/algorand.service');
 const ipfsService = require('../services/ipfs.service');
 const logger = require('../utils/logger');
@@ -25,7 +23,7 @@ class RetirementController {
 
       // Verify retirement transaction
       const verification = await algorandService.verifyTransaction(txnHash);
-      
+
       if (!verification.confirmed) {
         return res.status(400).json({
           success: false,

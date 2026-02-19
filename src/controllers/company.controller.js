@@ -2,6 +2,7 @@
 
 const Company = require('../models/Company');
 const Retirement = require('../models/Retirement');
+const Project = require('../models/Project');
 const indexerService = require('../services/indexer.service');
 const logger = require('../utils/logger');
 
