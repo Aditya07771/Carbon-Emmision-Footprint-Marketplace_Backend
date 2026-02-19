@@ -36,29 +36,11 @@ app.use(helmet({
 app.use(compression());
 
 /* =========================
-   CORS Configuration
+   CORS Configuration (ALLOW ALL)
 ========================= */
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  // 'https://carbon-emmision-footprint-marketplace.vercel.app', // Corrected spelling here
-  // 'https://carbon-emmision-footprint-marketpla.vercel.app',
-  'https://carbon-emmision-footprint-marketplace-frontend.vercel.app'    // Kept original just in case
-];
-
 const corsOptions = {
-  origin: function (origin, callback) {
-    // allow requests with no origin (mobile apps, curl, postman)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      console.warn(`CORS blocked request from origin: ${origin}`);
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
+  // Setting origin to true allows ALL origins by reflecting the requesting origin
+  origin: true, 
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address', 'Accept']
