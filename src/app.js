@@ -42,8 +42,9 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
-  'https://carbon-emmision-footprint-marketplace.vercel.app', // Corrected spelling here
-  'https://carbon-emmision-footprint-marketpla.vercel.app'    // Kept original just in case
+  // 'https://carbon-emmision-footprint-marketplace.vercel.app', // Corrected spelling here
+  // 'https://carbon-emmision-footprint-marketpla.vercel.app',
+  'https://carbon-emmision-footprint-marketplace-frontend.vercel.app'    // Kept original just in case
 ];
 
 const corsOptions = {
