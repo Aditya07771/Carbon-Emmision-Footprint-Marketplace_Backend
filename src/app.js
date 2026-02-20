@@ -9,6 +9,7 @@ const rateLimit = require('express-rate-limit');
 
 const sequelize = require('./config/database');
 const logger = require('./utils/logger');
+const errorHandler = require('./middleware/errorHandler');
 
 // ⭐ Import models (loads associations once)
 require('./models');
@@ -40,7 +41,7 @@ app.use(compression());
 ========================= */
 const corsOptions = {
   // Setting origin to true allows ALL origins by reflecting the requesting origin
-  origin: true, 
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address', 'Accept']
@@ -66,7 +67,14 @@ app.use(
 ========================= */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.API_RATE_LIMIT || 100
+  max: parseInt(process.env.API_RATE_LIMIT) || 5000,
+  message: {
+    success: false,
+    error: 'Too many requests, please try again later.',
+    status: 429
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 app.use('/api', limiter);
@@ -121,13 +129,7 @@ app.get('/', (req, res) => {
 /* =========================
    Error Handler
 ========================= */
-app.use((err, req, res, next) => {
-  logger.error(err);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal server error'
-  });
-});
+app.use(errorHandler);
 
 /* =========================
    Start Server

@@ -31,8 +31,14 @@ const Listing = sequelize.define('Listing', {
     type: DataTypes.ENUM('active', 'sold', 'cancelled'),
     defaultValue: 'active'
   },
+  buyer_wallet: {
+    type: DataTypes.STRING
+  },
   txn_hash: {
     type: DataTypes.STRING
+  },
+  sold_at: {
+    type: DataTypes.DATE
   }
 });
 

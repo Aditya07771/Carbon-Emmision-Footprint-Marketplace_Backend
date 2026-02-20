@@ -1,24 +1,37 @@
 // src/utils/logger.js
 
-const winston = require('winston');
+const colors = {
+  reset: '\x1b[0m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m'
+};
 
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
-    })
-  ]
-});
+class Logger {
+  info(message, ...args) {
+    console.log(`${colors.cyan}[INFO]${colors.reset}`, message, ...args);
+  }
 
-module.exports = logger;
+  error(message, ...args) {
+    console.error(`${colors.red}[ERROR]${colors.reset}`, message, ...args);
+  }
+
+  warn(message, ...args) {
+    console.warn(`${colors.yellow}[WARN]${colors.reset}`, message, ...args);
+  }
+
+  success(message, ...args) {
+    console.log(`${colors.green}[SUCCESS]${colors.reset}`, message, ...args);
+  }
+
+  debug(message, ...args) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`${colors.magenta}[DEBUG]${colors.reset}`, message, ...args);
+    }
+  }
+}
+
+module.exports = new Logger();

@@ -24,10 +24,15 @@ algodClient.status().do()
   })
   .catch(err => logger.error('❌ Algorand connection failed:', err));
 
-// Platform wallet
-const platformAccount = algosdk.mnemonicToSecretKey(
-  process.env.PLATFORM_WALLET_MNEMONIC
-);
+// Platform wallet (only if mnemonic is configured)
+let platformAccount = null;
+if (process.env.PLATFORM_WALLET_MNEMONIC) {
+  try {
+    platformAccount = algosdk.mnemonicToSecretKey(process.env.PLATFORM_WALLET_MNEMONIC);
+  } catch (err) {
+    logger.error('❌ Invalid PLATFORM_WALLET_MNEMONIC:', err.message);
+  }
+}
 
 module.exports = {
   algodClient,

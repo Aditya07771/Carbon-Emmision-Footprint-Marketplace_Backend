@@ -57,6 +57,9 @@ const Project = sequelize.define('Project', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  current_owner: {
+    type: DataTypes.STRING
+  },
   status: {
     type: DataTypes.ENUM('active', 'listed', 'sold', 'retired'),
     defaultValue: 'active'

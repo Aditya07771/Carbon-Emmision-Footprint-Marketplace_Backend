@@ -1,97 +1,130 @@
 // src/services/algorand.service.js
 
 const algosdk = require('algosdk');
-const { algodClient, indexerClient, platformAccount, appIds } = require('../config/algorand');
 const logger = require('../utils/logger');
+
+const algodClient = new algosdk.Algodv2(
+  '',
+  process.env.ALGOD_SERVER || 'https://testnet-api.algonode.cloud',
+  ''
+);
 
 class AlgorandService {
   /**
-   * Get account information
-   */
-  async getAccountInfo(address) {
-    try {
-      const info = await algodClient.accountInformation(address).do();
-      return {
-        address,
-        balance: info.amount / 1_000_000, // Convert to ALGO
-        assets: info.assets || []
-      };
-    } catch (error) {
-      logger.error('Error fetching account info:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get asset (NFT) information
-   */
-  async getAssetInfo(assetId) {
-    try {
-      const info = await algodClient.getAssetByID(assetId).do();
-      return {
-        assetId,
-        creator: info.params.creator,
-        total: info.params.total,
-        decimals: info.params.decimals,
-        unitName: info.params['unit-name'],
-        name: info.params.name,
-        url: info.params.url,
-        reserve: info.params.reserve
-      };
-    } catch (error) {
-      logger.error(`Error fetching asset ${assetId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verify a transaction was confirmed
+   * Verify a transaction on the blockchain
    */
   async verifyTransaction(txnHash) {
     try {
-      const txn = await algodClient.pendingTransactionInformation(txnHash).do();
+      logger.info(`🔍 Verifying transaction: ${txnHash}`);
+
+      // Get transaction info
+      const txnInfo = await algodClient.pendingTransactionInformation(txnHash).do();
+
+      // Check if confirmed
+      const confirmedRound = txnInfo['confirmed-round'];
+      if (!confirmedRound || confirmedRound === 0) {
+        logger.warn(`Transaction ${txnHash} not yet confirmed`);
+        return {
+          confirmed: false,
+          error: 'Transaction not confirmed yet'
+        };
+      }
+
+      // Extract transaction details
+      const txn = txnInfo.txn?.txn || txnInfo;
       
-      if (txn['confirmed-round']) {
+      const sender = txn.snd ? algosdk.encodeAddress(txn.snd) : null;
+      const receiver = txn.rcv ? algosdk.encodeAddress(txn.rcv) : null;
+      const amount = txn.amt || 0;
+
+      logger.info(`✅ Transaction verified at round ${confirmedRound}`);
+
+      return {
+        confirmed: true,
+        round: confirmedRound,
+        sender,
+        receiver,
+        amount: amount / 1_000_000, // Convert microAlgos to Algos
+        amountMicroAlgos: amount,
+        txn: txnInfo
+      };
+    } catch (error) {
+      logger.error(`❌ Transaction verification failed: ${error.message}`);
+      
+      // If transaction not found in pending pool, try to get it from confirmed transactions
+      try {
+        const indexerClient = new algosdk.Indexer(
+          '',
+          process.env.INDEXER_SERVER || 'https://testnet-idx.algonode.cloud',
+          ''
+        );
+        
+        const txnResult = await indexerClient.lookupTransactionByID(txnHash).do();
+        const txn = txnResult.transaction;
+
+        if (!txn) {
+          return {
+            confirmed: false,
+            error: 'Transaction not found'
+          };
+        }
+
+        const sender = txn.sender;
+        const receiver = txn['payment-transaction']?.receiver;
+        const amount = txn['payment-transaction']?.amount || 0;
+
         return {
           confirmed: true,
           round: txn['confirmed-round'],
-          timestamp: new Date()
+          sender,
+          receiver,
+          amount: amount / 1_000_000,
+          amountMicroAlgos: amount,
+          txn: txnResult
+        };
+      } catch (indexerError) {
+        logger.error(`❌ Indexer lookup failed: ${indexerError.message}`);
+        return {
+          confirmed: false,
+          error: error.message || 'Transaction verification failed'
         };
       }
-      
-      return { confirmed: false };
+    }
+  }
+
+  /**
+   * Get asset information
+   */
+  async getAssetInfo(assetId) {
+    try {
+      const assetInfo = await algodClient.getAssetByID(assetId).do();
+      return {
+        id: assetInfo.index,
+        params: assetInfo.params,
+        createdAtRound: assetInfo['created-at-round']
+      };
     } catch (error) {
-      logger.error(`Error verifying transaction ${txnHash}:`, error);
-      return { confirmed: false, error: error.message };
+      logger.error(`Failed to get asset info for ${assetId}:`, error);
+      throw new Error(`Asset ${assetId} not found on blockchain`);
     }
   }
 
   /**
    * Wait for transaction confirmation
    */
-  async waitForConfirmation(txnHash, timeout = 10) {
-    const start = Date.now();
-    
-    while (Date.now() - start < timeout * 1000) {
-      const result = await this.verifyTransaction(txnHash);
-      if (result.confirmed) return result;
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-    
-    throw new Error('Transaction confirmation timeout');
-  }
-
-  /**
-   * Get application (smart contract) info
-   */
-  async getApplicationInfo(appId) {
+  async waitForConfirmation(txId, timeout = 10) {
     try {
-      const app = await algodClient.getApplicationByID(appId).do();
-      return app;
+      const confirmedTxn = await algosdk.waitForConfirmation(algodClient, txId, timeout);
+      return {
+        confirmed: true,
+        round: confirmedTxn['confirmed-round']
+      };
     } catch (error) {
-      logger.error(`Error fetching app ${appId}:`, error);
-      throw error;
+      logger.error(`Confirmation timeout for ${txId}`);
+      return {
+        confirmed: false,
+        error: 'Confirmation timeout'
+      };
     }
   }
 }
